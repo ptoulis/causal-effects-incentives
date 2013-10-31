@@ -28,6 +28,12 @@
 source("../r-toolkit/checks.R")
 
 kFields <- c("nt", "nc", "Ut", "Uc", "hid", "hsize", "mid")
+kGiDensityFile <- "cache/gi.density.Rdata"
+kUFrameFileRCM <- "cache/Uframe-rCM.Rdata"
+kUFrameFileXCM <- "cache/Uframe-xCM.Rdata"
+
+kNoHospitals <- 6
+kHospitalSize <- 20
 
 random.game <- function(N, hospital.size) {
   ## Creates an empty game

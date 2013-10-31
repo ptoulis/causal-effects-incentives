@@ -1,3 +1,5 @@
+
+
 compute.gi.density <- function(hospital.size, nsims=100) {
   # Computes the pdf of deviation
   gi.density <- NA
@@ -14,7 +16,7 @@ compute.gi.density <- function(hospital.size, nsims=100) {
     setTxtProgressBar(pb, value=i / nsims)
   }
   gi.density <- gi.density / sum(gi.density)
-  save(gi.density, file="cache/gi.density.Rdata")
+  save(gi.density, file=kGiDensityFile)
 }
 
 compute.U.frame <- function(mech, hospital.size, nhospitals, nsims=100, verbose=F) {
@@ -37,6 +39,9 @@ compute.U.frame <- function(mech, hospital.size, nhospitals, nsims=100, verbose=
   pb = txtProgressBar(style=3)
   Nol = nrow(out) * nsims  # total iters
   count = 0  # simple counter
+  ETA = 1  # completion time in minutes
+  t0 = proc.time()["elapsed"]
+  
   for (nt.index in 1:nrow(out)) {
     for (i in 1:nsims) {
       nt = out$Nt[nt.index]  # no. of truthful hospitals
@@ -54,14 +59,20 @@ compute.U.frame <- function(mech, hospital.size, nhospitals, nsims=100, verbose=
       # 4. Calculate avg(utility_t) and avg(utility_c)
       add.ut <- ifelse(length(truthful.ids) > 0, mean(U[truthful.ids]), 0)
       add.uc <- ifelse(length(dev.ids) > 0, mean(U[dev.ids]), 0)
-      if(verbose)
-        print(sprintf("strategy=%s mech=%s nt=%d ut=%.3f  uc=%.3f i=%d", 
-                      strategy, mech, nt, add.ut, add.uc, i))
+      
       out$t[nt.index] = out$t[nt.index] + add.ut
       out$c[nt.index] = out$c[nt.index] + add.uc
       count <- count + 1
       setTxtProgressBar(pb, value = count / Nol)
-      print(out/nsims)
+      t1 <- proc.time()["elapsed"]
+      mins <- (t1-t0) / 60
+      speed <- count / mins  # examples / min
+      ETA <- (Nol-count) / speed
+      if(verbose) {
+        print(sprintf("strategy=%s mech=%s nt=%d ut=%.3f  uc=%.3f i=%d ETA=%.2f mins", 
+                      strategy, mech, nt, add.ut, add.uc, i, ETA))
+        print(out/nsims)
+      }
     }
   }
   out$t = out$t / nsims
@@ -79,15 +90,17 @@ compute.U.frame <- function(mech, hospital.size, nhospitals, nsims=100, verbose=
 
 if(! file.exists(kGiDensityFile)) {
   print("File for Gi density does not exist. Need to compute it.")
-  compute.gi.density(hospital.size=20, nsims=1000)
+  compute.gi.density(hospital.size=kHospitalSize, nsims=4000)
 }
 
 if(! file.exists(kUFrameFileRCM)) {
+  print("")
   print("File for U frame does not exist. Need to compute it.")
-  compute.U.frame(mech="rCM", hospital.size=20, nhospitals=6, nsims=1000)
+  compute.U.frame(mech="rCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals, nsims=100, verbose=F)
 }
 
 if(! file.exists(kUFrameFileXCM)) {
+  print("")
   print("File for U frame does not exist. Need to compute it.")
-  compute.U.frame(mech="xCM", hospital.size=20, nhospitals=6, nsims=1000)
+  compute.U.frame(mech="xCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals, nsims=100, verbose=F)
 }

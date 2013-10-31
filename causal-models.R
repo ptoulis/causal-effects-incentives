@@ -3,15 +3,10 @@
 ##
 ## Causal inference models.
 
-source("../kidney-exchange/terminology.R")
-
-kGiDensityFile <- "cache/gi.density.Rdata"
-kUFrameFileRCM <- "cache/Uframe-rCM.Rdata"
-kUFrameFileXCM <- "cache/Uframe-xCM.Rdata"
-
-load(file=kGiDensityFile)
-load(file=kUframeFileRCM)
-load(file=kUframeFileXCM)
+print("Loading Cache...")
+load(file=kGiDensityFile)  # loads gi.density
+load(file=kUFrameFileRCM)  # loads  Urcm
+load(file=kUFrameFileXCM)  # loads Uxcm
 
 
 h.contrast <- function(Y1, Y0) {
@@ -51,7 +46,7 @@ gi.over.fi <- function(Rij, verbose=F) {
 }
 
 ## Causal models/estimators beyond.
-bootstrap.estimator <- function(Z, R0.obs, R1.obs, nboots=1000) {
+bootstrap.estimator <- function(ucb.out, nboots=1000) {
   # Rj.obs = LIST of RKE objects (reports)
   # Z = assignment, i.e. data frame
   #     hid   mid
@@ -60,10 +55,10 @@ bootstrap.estimator <- function(Z, R0.obs, R1.obs, nboots=1000) {
   #       ...
   # Assume:  subset(Z, mid==1)  gives the hospital ids H that are 
   # in the SAME order as in the R0.obs list
+  R0.obs <- ucb.out$R0.obs
+  R1.obs <- ucb.out$R1.obs
   CHECK_EQ(length(R0.obs), length(R1.obs))
   m = length(R1.obs)
-  H1.ids <- subset(Z, mid==1)$hid  # hospital ids in M1
-  H0.ids <- subset(Z, mid==0)$hid  # hospital ids in M0
   
   p1.obs <- sapply(1:m, function(i) 1 / (1 + gi.over.fi(R1.obs[[i]])))
   p0.obs <- sapply(1:m, function(i) 1 / (1 + gi.over.fi(R0.obs[[i]])))
