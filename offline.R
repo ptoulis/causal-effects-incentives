@@ -1,25 +1,59 @@
+summary.Rij <- function(Rij) {
+  # computes summary of the report (Needs to be a TABLE)
+  table(factor(Rij$pairs$pair.type, levels=c("O", "U", "S", "R")))
+}
 
+sample.Rij <- function(nHospitalSize, Yij) {
+  if (Yij==1) {
+    return(rrke(nHospitalSize))
+  } else {
+    rke = rrke(nHospitalSize) 
+    m = max.matching(rke)
+    matched.ids <- m$match$pair.id
+    CHECK_TRUE(! is.null(matched.ids))
+    return(rke.remove.pairs(rke, matched.ids))
+  }
+}
 
 compute.gi.density <- function(hospital.size, nsims=100) {
   # Computes the pdf of deviation
   gi.density <- NA
   pb = txtProgressBar(style=3)
   for (i in 1:nsims) {
-    rke = rrke(hospital.size)
-    m = max.matching(rke)
-    rke.left <- rke.remove.pairs(rke, m$match$pair.id)
+    rke = sample.Rij(hospital.size, Yij=0)
     if (i == 1) {
-      gi.density <- table(rke.left$pairs$desc)
+      gi.density <- summary.Rij(rke)
     } else {
-      gi.density <- table(rke.left$pairs$desc) + gi.density
+      gi.density <- summary.Rij(rke) + gi.density
     }
     setTxtProgressBar(pb, value=i / nsims)
   }
   gi.density <- gi.density / sum(gi.density)
+  gi.density <- list(sims=nsims, size=hospital.size, density=gi.density)
   save(gi.density, file=kGiDensityFile)
 }
 
-compute.U.frame <- function(mech, hospital.size, nhospitals, nsims=100, verbose=F) {
+compute.fi.density <- function(hospital.size, nsims=100) {
+  # Computes the pdf of deviation
+  fi.density <- NA
+  pb = txtProgressBar(style=3)
+  for (i in 1:nsims) {
+    rke = sample.Rij(hospital.size, Yij=1)
+    if (i == 1) {
+      fi.density <- summary.Rij(rke)
+    } else {
+      fi.density <- summary.Rij(rke) + fi.density
+    }
+    setTxtProgressBar(pb, value=i / nsims)
+  }
+  fi.density <- fi.density / sum(fi.density)
+  fi.density <- list(sims=nsims, size=hospital.size, density=fi.density)
+  save(fi.density, file=kFiDensityFile)
+}
+
+
+compute.U.frame <- function(mech, hospital.size, nhospitals,
+                            nsims=100, verbose=F) {
   # Creates the data frame U
   # where each row shows U$t = utility of truthful when have U$nt=truthful agents.
   # Nt should be from 0 to nhospitals
@@ -27,7 +61,7 @@ compute.U.frame <- function(mech, hospital.size, nhospitals, nsims=100, verbose=
   #    U =      t     c     Nt
   #                 ...
   #            8.5   7.5    3
-  #           9.5    5.4    4 
+  #            9.5    5.4   4 
   #           10.1    5.1   5
   #  This table shows that when Nt=3 truthful hospitals, the truthful hospital gets 8.5 on average
   # and the deviating gets 7.5. Inc Nt, i.e. having more truthful gets more util
@@ -87,20 +121,30 @@ compute.U.frame <- function(mech, hospital.size, nhospitals, nsims=100, verbose=
 }
 
 
+kNDensitySamples <- 1000
+kVerboseUF <- T
+kNSimsUF <- 100
 
 if(! file.exists(kGiDensityFile)) {
   print("File for Gi density does not exist. Need to compute it.")
-  compute.gi.density(hospital.size=kHospitalSize, nsims=4000)
+  compute.gi.density(hospital.size=kHospitalSize, nsims=kNDensitySamples)
+}
+
+if(! file.exists(kFiDensityFile)) {
+  print("File for Fi density does not exist. Need to compute it.")
+  compute.fi.density(hospital.size=kHospitalSize, nsims=kNDensitySamples)
 }
 
 if(! file.exists(kUFrameFileRCM)) {
   print("")
   print("File for U frame does not exist. Need to compute it.")
-  compute.U.frame(mech="rCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals, nsims=100, verbose=F)
+  compute.U.frame(mech="rCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals,
+                  nsims=kNSimsUF, verbose=kVerboseUF)
 }
 
 if(! file.exists(kUFrameFileXCM)) {
   print("")
   print("File for U frame does not exist. Need to compute it.")
-  compute.U.frame(mech="xCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals, nsims=100, verbose=F)
+  compute.U.frame(mech="xCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals,
+                  nsims=kNSimsUF, verbose=kVerboseUF)
 }

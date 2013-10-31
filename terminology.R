@@ -29,13 +29,15 @@ source("../r-toolkit/checks.R")
 
 kFields <- c("nt", "nc", "Ut", "Uc", "hid", "hsize", "mid")
 kGiDensityFile <- "cache/gi.density.Rdata"
+kFiDensityFile <- "cache/fi.density.Rdata"
 kUFrameFileRCM <- "cache/Uframe-rCM.Rdata"
 kUFrameFileXCM <- "cache/Uframe-xCM.Rdata"
 
-kNoHospitals <- 6
+# Define the no. of hospitals and their sizes.
+kNoHospitals <- 8
 kHospitalSize <- 20
 
-random.game <- function(N, hospital.size) {
+random.game <- function(N=kNoHospitals, hospital.size=kHospitalSize) {
   ## Creates an empty game
   out <- matrix(0, nrow=N, ncol=length(kFields))
   colnames(out) <- kFields
@@ -77,8 +79,10 @@ update.game <- function(game, hospital.id, ucb.choice, utility) {
   # i.e. sum up the utilities and increment counters.
   CHECK_game(game)
   CHECK_MEMBER(hospital.id, game$hid)  # valid hospital id?
-  ucbs <- replicate(10, ucb.strategy(game, hospital.id))
-  CHECK_MEMBER(ucb.choice, ucbs)
+  if(runif(1) < 0.05) {
+    ucbs <- replicate(20, ucb.strategy(game, hospital.id))
+    CHECK_MEMBER(ucb.choice, ucbs)
+  }
   #
   # Now update the utility
   row.id <- which(game$hid==hospital.id)
