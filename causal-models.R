@@ -105,6 +105,18 @@ bootstrap.estimator <- function(ucb.out, nboots=1000) {
   return(boot.samples)
 }
 
+get.heuristic.beta <- function(dU) {
+#   load(file="out/GiFi-experiment.Rdata")
+#   gifi <- c(GiFi$t, GiFi$c)
+#   xarg <- seq(0, 10, length.out=10000)
+#   vals <- sapply(xarg, function(x) mean(1 / (1 + x * gifi)))
+#   x.optimal <- xarg[which.min(abs(vals-0.5))]
+#   betas <- seq(0, 10, length.out=1000)
+#   yarg <- sapply(betas, function(b) mean(exp(b * dU)))
+#   return(betas[which.min(abs(yarg-x.optimal))])
+  return(1.8)
+}
+
 ## Estimation based on the game-theoretic prior.
 gtprior.estimator <- function(ucb.out, mcmc.niters=1000) {
   # in the SAME order as in the R0.obs list
@@ -118,14 +130,26 @@ gtprior.estimator <- function(ucb.out, mcmc.niters=1000) {
     
   logdebug("s0, g0f0")
   logdebug(c(ucb.out$s0, rep("-", m)))
-  logdebug(gifi.obs0)
+  logdebug(round(gifi.obs0, 2))
   logdebug("s1, g1f1")
   logdebug(c(rep("-", m), ucb.out$s1))
-  logdebug(gifi.obs1)
+  logdebug(round(gifi.obs1, 2))
   
   # Run the MCMC chain
   D = 2 * m  # dimension
-  beta = 1.5  # picking this correctly will improve performance.
+  # Strategic coin flip is when a hospital flips a coin to decide Y=1, or Y=0
+  # Our model should that, in a strategic coin flip, given report R from the hospital
+  #  E { P(Y=1 | Robs) } = 0.5
+  # Note that P(Y=1 | Robs) = 1 / (1 + exp(b * Du) * gi/fi(R)))
+  # So we need to solve E { 1 / (1 + exp(b * Du) * gi/fi(R)) } = 0.5  for b
+  # Use Jensen's to derive a bound.
+  dU0 <- c(head(Urcm$c, kNoHospitals) - tail(Urcm$t, kNoHospitals))
+  dU1 <- c(head(Uxcm$c, kNoHospitals) - tail(Uxcm$t, kNoHospitals))
+  dU <- c(dU0, dU1)
+  beta <- get.heuristic.beta(dU)
+  rm(dU)
+  print(sprintf("Optimum heuristic beta=%.3f", beta))
+  
   CHECK_EQ(D, kNoHospitals)
   
   Y0.mcmc <- matrix(0, nrow=D, ncol=mcmc.niters)
@@ -136,12 +160,18 @@ gtprior.estimator <- function(ucb.out, mcmc.niters=1000) {
   rcm.prob <- function(nt, factor=1) {
     alpha.c <- Urcm$c[nt + 1]
     alpha.t <- Urcm$t[nt + 2]
-    return(1 / (1 + factor * exp(beta * (alpha.c - alpha.t))))
+    priorOdds <- exp(beta * (alpha.c - alpha.t))
+    logdebug(sprintf("Calc Pr(Y=1 | Robs, rCM):::nt=%d  dU(c-t)=%.3f  prior.odds=%.3f factor=%.3f",
+                     nt, alpha.c-alpha.t, priorOdds, factor))
+    return(1 / (1 + factor * priorOdds))
   }
   xcm.prob <- function(nt, factor=1) {
     alpha.c <- Uxcm$c[nt + 1]
     alpha.t <- Uxcm$t[nt + 2]
-    return(1 / (1 + factor * exp(beta * (alpha.c - alpha.t))))
+    priorOdds <- exp(beta * (alpha.c - alpha.t))
+    logdebug(sprintf("Calc Pr(Y=1 | Robs, xCM):::nt=%d  dU(c-t)=%.3f  prior.odds=%.3f factor=%.3f",
+                     nt, alpha.c-alpha.t, priorOdds, factor))
+    return(1 / (1 + factor * priorOdds))
   }
   
   for (t in 2:mcmc.niters) {
@@ -164,11 +194,11 @@ gtprior.estimator <- function(ucb.out, mcmc.niters=1000) {
         r0.prob <- rcm.prob(N0t)
         r1.prob <- xcm.prob(N1t, factor=gifi.obs1[d-m])
       }
-#       logdebug("Y0, Y1=")
-#       logdebug(Y0.t)
-#       logdebug(Y1.t)
-#       logdebug(sprintf("#truthful N0t=%d   N1t=%d", N0t, N1t))
-#       logdebug(sprintf("Truthful prob pRCM.t=%2f, pxCM.t=%2f", r0.prob, r1.prob))
+      logdebug("Y0, Y1=")
+      logdebug(Y0.t)
+      logdebug(Y1.t)
+      logdebug(sprintf("#truthful N0t=%d   N1t=%d", N0t, N1t))
+      logdebug(sprintf("Comp. d=%d  Truthful prob pRCM.t=%2f, pxCM.t=%2f", d, r0.prob, r1.prob))
       # 3. Sample from conditional
       Y0.t[d] <- rbinom(1, size=1, prob=r0.prob)
       Y1.t[d] <- rbinom(1, size=1, prob=r1.prob)
