@@ -114,7 +114,7 @@ get.heuristic.beta <- function(dU) {
 #   betas <- seq(0, 10, length.out=1000)
 #   yarg <- sapply(betas, function(b) mean(exp(b * dU)))
 #   return(betas[which.min(abs(yarg-x.optimal))])
-  return(1.8)
+  return(1.0)
 }
 
 ## Estimation based on the game-theoretic prior.

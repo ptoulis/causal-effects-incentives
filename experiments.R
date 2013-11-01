@@ -161,9 +161,12 @@ gifi.exp <- function(thres.upper=1000, thres.lower=0, breaks=30) {
   x = 1 / (1 + x[x >= thres.lower & x < thres.upper])
   y = 1 / (1 + y[y >= thres.lower & y < thres.upper])
   # red is P(Y=1 | Rt)
-  hist(x, breaks=breaks, freq=F, main="", xlab="posterior prob.", col=rgb(1, 0, 0, 0.5)); 
+  hist(x, breaks=breaks, freq=F, 
+       xlab="posterior prob.", col=rgb(0, 1, 0, 0.5),
+       main="strong separability"); 
+  legend(0.5, 5, legend=c("P(Y=1|Rt)", "P(Y=1|Rc)"), fill=c("green", "red"), cex=1.5 )
   # Green is P(Y=1 | Rc)
-  hist(y, breaks=breaks, freq=F, col=rgb(0, 1, 0, 0.3), add=T)
+  hist(y, breaks=breaks, freq=F, col=rgb(1, 0, 0, 0.3), add=T)
 }
 
 # Experiments to measure incentives under the UCB dynamics.
