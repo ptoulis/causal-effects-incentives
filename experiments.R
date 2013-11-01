@@ -211,7 +211,7 @@ BootstrapVsGT.Experiment <- function(stopping.T=5,
     boot.estimates <- c(boot.estimates, mean(tau.boot))
     gt.estimates <- c(gt.estimates, mean(tau.gt))
     
-    logdebug(sprintf("Current estimates Boot=%.3f  GT=%.3f", mean(boot.estimates), mean(gt.estimates)))
+    cat(sprintf("\nCurrent estimates Boot=%.3f  GT=%.3f", mean(boot.estimates), mean(gt.estimates)))
     setTxtProgressBar(pb, value=j/samples.per.T)
   }
   tau.boot <- mean(boot.estimates)
