@@ -148,3 +148,26 @@ if(! file.exists(kUFrameFileXCM)) {
   compute.U.frame(mech="xCM", hospital.size=kHospitalSize, nhospitals=2 * kNoHospitals,
                   nsims=kNSimsUF, verbose=kVerboseUF)
 }
+
+create.template.UFrames <- function() {
+  # for rcm
+  nr = kNoHospitals + 1
+  s = kHospitalSize
+  epsilon = 0.3
+  Urcm <- data.frame(t=rep(0, nr), c=rep(0, nr))
+  Urcm$t <- c(0, rep(0.8 * s/2, nr -1)) + seq(0, kNoHospitals) * epsilon
+  Urcm$c <- c(rep(0.87 * s/2, nr - 1), 0) + seq(0, kNoHospitals) * epsilon
+  Urcm$c[nr] <- 0
+  Urcm$nt <- seq(0, kNoHospitals)
+  
+  Uxcm <- data.frame(t=rep(0, nr), c=rep(0, nr))
+  Uxcm$t <- c(0, rep(0.65 * s/2, nr -1)) + seq(0, kNoHospitals) * epsilon
+  Uxcm$c <-  Uxcm$t 
+  Uxcm$c[nr] <- 0
+  Uxcm$c[1] <- 0.65 * s/2
+  Uxcm$nt <- seq(0, kNoHospitals)
+  
+  return(list(Urcm=Urcm, Uxcm=Uxcm))
+}
+
+
