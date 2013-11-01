@@ -57,7 +57,14 @@ loginfo <- function(x) logthis(x, level=2)
 logwarning <- function(x) logthis(x, level=3)
 logerror <- function(x) logthis(x, level=4)
 
-
+messup.gi.fi <- function() {
+  x = 0.55 * fi.density$density + 0.45 * gi.density$density
+  y = 0.45 * fi.density$density + 0.55 * gi.density$density
+  # x = gi.density$density
+  # y = fi.density$density
+  fi.density$density <<- x
+  gi.density$density <<- y
+}
 
 # Note:
 # m=6 hospitals, n=20 pairs -> all truthful, rCM clears in 0.5sec
@@ -153,7 +160,9 @@ gifi.exp <- function(thres.upper=1000, thres.lower=0, breaks=30) {
   y = GiFi$c
   x = 1 / (1 + x[x >= thres.lower & x < thres.upper])
   y = 1 / (1 + y[y >= thres.lower & y < thres.upper])
-  hist(x, breaks=breaks, freq=F, main="P(Y=1 | R)", xlab="gi/fi", col=rgb(1, 0, 0, 0.5)); 
+  # red is P(Y=1 | Rt)
+  hist(x, breaks=breaks, freq=F, main="", xlab="posterior prob.", col=rgb(1, 0, 0, 0.5)); 
+  # Green is P(Y=1 | Rc)
   hist(y, breaks=breaks, freq=F, col=rgb(0, 1, 0, 0.3), add=T)
 }
 
@@ -189,7 +198,8 @@ BootstrapVsGT.Experiment <- function(stopping.T=5,
   # Checks whether we are using the correct size of hospitals
   CHECK_TRUE(gi.density$size == kHospitalSize)
   CHECK_TRUE(fi.density$size == kHospitalSize)
-  
+  print(fi.density$density)
+  print(gi.density$density)
   pb <- txtProgressBar(style=3)
 
   for (j in 1:samples.per.T) {
@@ -210,8 +220,8 @@ BootstrapVsGT.Experiment <- function(stopping.T=5,
     # 3. Save the estimates
     boot.estimates <- c(boot.estimates, mean(tau.boot))
     gt.estimates <- c(gt.estimates, mean(tau.gt))
-    
-    cat(sprintf("\nCurrent estimates Boot=%.3f  GT=%.3f", mean(boot.estimates), mean(gt.estimates)))
+    print("")
+    print(sprintf("Current estimates Boot=%.3f  GT=%.3f", mean(boot.estimates), mean(gt.estimates)))
     setTxtProgressBar(pb, value=j/samples.per.T)
   }
   tau.boot <- mean(boot.estimates)

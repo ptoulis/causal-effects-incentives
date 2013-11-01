@@ -21,3 +21,7 @@
   BootstrapVsGT.Experiment(samples.per.T=100)
   
   NOTE: saves "boot.estimates/gt.estimates" in "out/Estimation-..."
+  
+5) To run the  contrast with BAD gi/fi run
+  messup.gi.fi()
+  BootstrapVsGT.Experiment(samples.per.T=100)
