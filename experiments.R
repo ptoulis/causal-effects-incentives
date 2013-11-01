@@ -25,6 +25,7 @@ library(stringr)
 if (file.exists(file=kLogFile)) {
   file.remove(file=kLogFile)
 }
+
 logthis <- function(x, level=kCurrentLevel) {
   wline <- function(vec) {
     write(str_c(vec, collapse="\t"), file=kLogFile, append=T)
@@ -215,5 +216,14 @@ Bootstrap.Experiment <- function(stopping.times=c(3, 10),
     print(sprintf("T=%d  samples=%d tau=%.3f", stopping.T, samples.per.T, mean(samples.T)))
     boot.line <- c(boot.line, mean(samples.T))
   }
-  save(boot.line, file="out/boot.Rdata")
+  save(boot.line, file="out/Estimation-Bootstrap-experiment.Rdata")
 }
+
+GTPrior.Experiment <- function() {
+  ## Game-theoretic prior.
+  
+}
+
+
+
+

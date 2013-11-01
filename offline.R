@@ -123,7 +123,7 @@ compute.U.frame <- function(mech, hospital.size, nhospitals,
 
 kNDensitySamples <- 1000
 kVerboseUF <- T
-kNSimsUF <- 100
+kNSimsUF <- 200
 
 if(! file.exists(kGiDensityFile)) {
   print("File for Gi density does not exist. Need to compute it.")
@@ -137,14 +137,14 @@ if(! file.exists(kFiDensityFile)) {
 
 if(! file.exists(kUFrameFileRCM)) {
   print("")
-  print("File for U frame does not exist. Need to compute it.")
-  compute.U.frame(mech="rCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals,
+  print("File for rCM U-Frame does not exist. Need to compute it.")
+  compute.U.frame(mech="rCM", hospital.size=kHospitalSize, nhospitals=2 * kNoHospitals,
                   nsims=kNSimsUF, verbose=kVerboseUF)
 }
 
 if(! file.exists(kUFrameFileXCM)) {
   print("")
-  print("File for U frame does not exist. Need to compute it.")
-  compute.U.frame(mech="xCM", hospital.size=kHospitalSize, nhospitals=kNoHospitals,
+  print("File for xCM U-frame does not exist. Need to compute it.")
+  compute.U.frame(mech="xCM", hospital.size=kHospitalSize, nhospitals=2 * kNoHospitals,
                   nsims=kNSimsUF, verbose=kVerboseUF)
 }

@@ -105,5 +105,60 @@ bootstrap.estimator <- function(ucb.out, nboots=1000) {
   return(boot.samples)
 }
 
-
+## Estimation based on the game-theoretic prior.
+gtprior.estimator <- function(ucb.out, nboots=1000) {
+  # Rj.obs = LIST of RKE objects (reports)
+  # Z = assignment, i.e. data frame
+  #     hid   mid
+  #     1     0 
+  #     25    1
+  #       ...
+  # Assume:  subset(Z, mid==1)  gives the hospital ids H that are 
+  # in the SAME order as in the R0.obs list
+  R0.obs <- ucb.out$R0.obs
+  R1.obs <- ucb.out$R1.obs
+  CHECK_EQ(length(R0.obs), length(R1.obs))
+  m = length(R1.obs)
+  
+  p1.obs <- sapply(1:m, function(i) 1 / (1 + gi.over.fi(R1.obs[[i]])))
+  p0.obs <- sapply(1:m, function(i) 1 / (1 + gi.over.fi(R0.obs[[i]])))
+  p0 <- c(round(p0.obs, 2), rep("-", m))
+  p1 <- c(rep("-", m), round(p1.obs, 2))
+  
+  for (i in 1:length(R0.obs)) {
+    logdebug(sprintf("Report of hospital %d in M0. Real strategy=%s p0i=%.3f",
+                     i, ucb.out$s0[i], p0.obs[i]))
+    logdebug(summary.Rij(R0.obs[[i]]))
+    logdebug(sprintf("Report of hospital %d in M1. Real strategy=%s p1i=%.3f",
+                     i, ucb.out$s1[i], p1.obs[i]))
+    logdebug(summary.Rij(R1.obs[[i]]))
+  }
+  boot.samples <- c()
+  
+  logdebug("s0, p0")
+  logdebug(c(ucb.out$s0, rep("-", m)))
+  logdebug(p0)
+  logdebug("s1, p1")
+  logdebug(c(rep("-", m), ucb.out$s1))
+  logdebug(p1)
+  logdebug(sprintf("expected diff=%.3f", mean(p1.obs) - mean(p0.obs)))
+  
+  for (t in 1:nboots) {
+    y1.obs <- rbinom(n=length(p1.obs), size=1, prob=p1.obs)
+    y0.obs <- rbinom(n=length(p0.obs), size=1, prob=p0.obs)
+    
+    y1.mis <- sample(y1.obs, size=m, replace=T)
+    y0.mis <- sample(y0.obs, size=m, replace=T)
+    
+    Y1 = c(y1.mis, y1.obs)
+    Y0 = c(y0.obs, y0.mis)
+    logfine("Imputation of Y0")
+    logfine(Y0)
+    logfine("Imputation of Y1")
+    logfine(Y1)
+    logfine(h.contrast(Y1, Y0))
+    boot.samples[t] <- h.contrast(Y1, Y0)
+  }
+  return(boot.samples)
+}
 
