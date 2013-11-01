@@ -18,7 +18,7 @@ source("causal-models.R")
 
 logReset()
 kLogFile <- "out/logs.txt"
-kCurrentLevel  <- 4 # debug
+kCurrentLevel  <- 1 # debug
 #  FINE DEBUG  INFO  WARNING   ERROR
 #   0     1      2     3        4
 library(stringr)
@@ -83,7 +83,7 @@ Run.Mechanisms.UCB <- function(game, stopping.T, verbose=F) {
     hsize = head(hset$hsize, 1) 
     if(verbose) {
       print("")
-      print(sprintf("Mechanism %s iters=%d, m=%d, size=%d", mech, niters, m, hsize))
+      print(sprintf("Mechanism %s iters=%d, m=%d, size=%d", mech, stopping.T, m, hsize))
       print(game)
     }
     kpd <- NA
@@ -180,48 +180,84 @@ Tau.UCBEstimands.Experiment <- function(stopping.T, nsamples=10) {
 }
 
 # Experiments for the bootstrap estimator.
-Bootstrap.Experiment <- function(stopping.times=c(3, 10),
+BootstrapVsGT.Experiment <- function(stopping.T=5,
                                  samples.per.T=10,
-                                 nboots=100) {
-  boot.line <- c()
-  logdebug("Bootstrap experiment")
+                                 nboots=1000,
+                                 filename.suffix="default") {
+  boot.estimates <- c()
+  gt.estimates <- c()
   # Checks whether we are using the correct size of hospitals
   CHECK_TRUE(gi.density$size == kHospitalSize)
   CHECK_TRUE(fi.density$size == kHospitalSize)
-  warning("Should add checks for no. of hospitals too")
   
-  for(stopping.T in stopping.times) {
-    samples.T <- c()
-    for (j in 1:samples.per.T) {
-      game <- random.game()
-      logdebug(sprintf("T=%d  j=%d ", stopping.T, j))
-      logdebug("Game before running")
-      logdebug(game)
-      # watch out. These need to match to our computed cache.
-      ucb.out <- Run.Mechanisms.UCB(game, niters=stopping.T)
-      logdebug("Game after running")
-      logdebug(ucb.out$game)
-      H0.ids <- ucb.out$h0.ids
-      H1.ids <-ucb.out$h1.ids
-      CHECK_SETEQ(H0.ids, subset(game, mid==0)$hid)
-      CHECK_SETEQ(H0.ids, 1:length(H0.ids))
-      CHECK_DISJOINT(H0.ids, H1.ids)
-      
-      tau.boot <- bootstrap.estimator(ucb.out, nboots=nboots)
-      est = mean(tau.boot)
-      se = bootstrap.mean(tau.boot)
-      logdebug(sprintf("Bootstrap (%.3f, %.3f)", est - 2 * se, est + 2 * se))
-      samples.T <- c(samples.T, mean(tau.boot))
-    }
-    print(sprintf("T=%d  samples=%d tau=%.3f", stopping.T, samples.per.T, mean(samples.T)))
-    boot.line <- c(boot.line, mean(samples.T))
+  pb <- txtProgressBar(style=3)
+
+  for (j in 1:samples.per.T) {
+    game <- random.game()
+    logdebug(sprintf("T=%d  j=%d ", stopping.T, j))
+    logdebug("Game before running")
+    logdebug(game)
+    # watch out. These need to match to our computed cache.
+    # 1. Run the UCB dynamics
+    ucb.out <- Run.Mechanisms.UCB(game, stopping.T=stopping.T)
+    logdebug("Game after running")
+    logdebug(ucb.out$game)
+    # 2a. Run the bootstrap estimator  
+    tau.boot <- bootstrap.estimator(ucb.out, nboots=nboots)
+    # 2b. Run the GT estimator
+    tau.gt <- gtprior.estimator(ucb.out, 1000)
+    
+    # 3. Save the estimates
+    boot.estimates <- c(boot.estimates, mean(tau.boot))
+    gt.estimates <- c(gt.estimates, mean(tau.gt))
+    
+    logdebug(sprintf("Current estimates Boot=%.3f  GT=%.3f", mean(boot.estimates), mean(gt.estimates)))
+    setTxtProgressBar(pb, value=j/samples.per.T)
   }
-  save(boot.line, file="out/Estimation-Bootstrap-experiment.Rdata")
+  tau.boot <- mean(boot.estimates)
+  se <- bootstrap.mean(boot.estimates)
+  tau.gt <- mean(gt.estimates)
+  se.gt <- bootstrap.mean(gt.estimates)
+  cat(sprintf("\nFinal bootstrap CI (%.3f, %.3f)", tau.boot - 2 * se, tau.boot + 2 * se))
+  cat(sprintf("\nFinal gt CI (%.3f, %.3f)", tau.gt - 2 * se.gt, tau.gt + 2 * se.gt))
+  
+  save(boot.estimates, file=sprintf("out/Estimation-Bootstrap-experiment-%s.Rdata", filename.suffix))
+  save(gt.estimates, file=sprintf("out/Estimation-GT-experiment-%s.Rdata", filename.suffix))
+  
 }
 
 GTPrior.Experiment <- function() {
   ## Game-theoretic prior.
+  gt.estimates <- c()
   
+  # Checks whether we are using the correct size of hospitals
+  CHECK_TRUE(gi.density$size == kHospitalSize)
+  CHECK_TRUE(fi.density$size == kHospitalSize)
+  
+  pb <- txtProgressBar(style=3)
+  
+  for (j in 1:samples.per.T) {
+    game <- random.game()
+    logdebug(sprintf("T=%d  j=%d ", stopping.T, j))
+    logdebug("Game before running")
+    logdebug(game)
+    # watch out. These need to match to our computed cache.
+    # 1. Run the UCB dynamics
+    ucb.out <- Run.Mechanisms.UCB(game, stopping.T=stopping.T)
+    logdebug("Game after running")
+    logdebug(ucb.out$game)
+    # 2. Run the bootstrap estimator  
+    tau.boot <- bootstrap.estimator(ucb.out, nboots=nboots)
+    est = mean(tau.boot)
+    se = bootstrap.mean(tau.boot)
+    logdebug(sprintf("j=%d Bootstrap (%.3f, %.3f)", j, est - 2 * se, est + 2 * se))
+    boot.estimates <- c(boot.estimates, est)
+    setTxtProgressBar(pb, value=j/samples.per.T)
+  }
+  tau.boot <- mean(boot.estimates)
+  se <- bootstrap.mean(boot.estimates)
+  cat(sprintf("\nFinal bootstrap estimte (%.3f, %.3f)", tau.boot - 2 * se, tau.boot + 2 * se))
+  save(boot.estimates, file=sprintf("out/Estimation-Bootstrap-experiment-%s.Rdata", filename.suffix))
 }
 
 
