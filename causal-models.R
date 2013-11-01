@@ -148,7 +148,7 @@ gtprior.estimator <- function(ucb.out, mcmc.niters=1000) {
   dU <- c(dU0, dU1)
   beta <- get.heuristic.beta(dU)
   rm(dU)
-  print(sprintf("Optimum heuristic beta=%.3f", beta))
+  # print(sprintf("Optimum heuristic beta=%.3f", beta))
   
   CHECK_EQ(D, kNoHospitals)
   
