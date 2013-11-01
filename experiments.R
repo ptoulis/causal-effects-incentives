@@ -18,7 +18,7 @@ source("causal-models.R")
 
 logReset()
 kLogFile <- "out/logs.txt"
-kCurrentLevel  <- 1 # debug
+kCurrentLevel  <- 5 # debug
 #  FINE DEBUG  INFO  WARNING   ERROR
 #   0     1      2     3        4
 library(stringr)
