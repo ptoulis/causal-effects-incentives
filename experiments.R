@@ -169,7 +169,7 @@ Tau.UCBEstimands.Experiment <- function(stopping.T, nsamples=10) {
     ucb.estimand$M0 <- c(ucb.estimand$M0, with(g0, nt / (nt + nc)))
     ucb.estimand$M1 <- c(ucb.estimand$M1, with(g1, nt / (nt + nc)))
     setTxtProgressBar(pb, value=i / nsamples)
-    save(ucb.estimand, file="out/UCBEstimand-experiment.Rdata")
+    save(ucb.estimand, file=sprintf("out/UCBEstimand-t%d-experiment.Rdata", stopping.T))
     cat(sprintf("\nM1=%.3f  M0=%.3f  D=%.3f, se=%.3f",
                   mean(ucb.estimand$M1), mean(ucb.estimand$M0),
                   mean(ucb.estimand$M1) - mean(ucb.estimand$M0),
