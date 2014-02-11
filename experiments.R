@@ -58,8 +58,8 @@ logwarning <- function(x) logthis(x, level=3)
 logerror <- function(x) logthis(x, level=4)
 
 messup.gi.fi <- function() {
-  x = 0.55 * fi.density$density + 0.45 * gi.density$density
-  y = 0.45 * fi.density$density + 0.55 * gi.density$density
+  x = 0.52 * fi.density$density + 0.48 * gi.density$density
+  y = 0.48 * fi.density$density + 0.52 * gi.density$density
   # x = gi.density$density
   # y = fi.density$density
   fi.density$density <<- x
@@ -155,6 +155,8 @@ Gi.Fi.Experiment <- function(nsamples=100) {
 }
 
 gifi.exp <- function(thres.upper=1000, thres.lower=0, breaks=30) { 
+  a.col = rgb(0.7, 0.7, 0.7, alpha=0.2)
+  b.col = rgb(0,0,0, 0.4)
   load(file="out/GiFi-experiment.Rdata")
   x = GiFi$t
   y = GiFi$c
@@ -162,11 +164,11 @@ gifi.exp <- function(thres.upper=1000, thres.lower=0, breaks=30) {
   y = 1 / (1 + y[y >= thres.lower & y < thres.upper])
   # red is P(Y=1 | Rt)
   hist(x, breaks=breaks, freq=F, 
-       xlab="posterior prob.", col=rgb(0, 1, 0, 0.5),
+       xlab="posterior prob.", col=a.col,
        main="strong separability"); 
-  legend(0.5, 5, legend=c("P(Y=1|Rt)", "P(Y=1|Rc)"), fill=c("green", "red"), cex=1.5 )
+  legend(0.4, 13, legend=c("P(Y=1|Rt)", "P(Y=1|Rc)"), fill=c(a.col, b.col), cex=1.6)
   # Green is P(Y=1 | Rc)
-  hist(y, breaks=breaks, freq=F, col=rgb(1, 0, 0, 0.3), add=T)
+  hist(y, breaks=20, freq=F, col=b.col, add=T)
 }
 
 # Experiments to measure incentives under the UCB dynamics.
