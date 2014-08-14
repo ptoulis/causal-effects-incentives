@@ -1,4 +1,4 @@
-## Copyright 2013 Panos Toulis, Donald B. Rubin
+## Copyright 2013 Panos Toulis, David C. Parkes.
 # Author: Panos Toulis(ptoulis@fas.harvard.edu)
 #
 # Incentive compatible experiments.
@@ -12,7 +12,8 @@ rm(list=ls())
 source("../../r-toolkit/checks.R")
 logistic <- function(x) exp(x) / (1 + exp(x))
 
-sample.network <- function(V=1000, S=100) {
+sample.outcomes <- function(V=1000, S=100, 
+                            lambda.S=0.4, b0=-3.9, b1=0.95) {
   # Samples the binary outcomes Y on the test population
   #
   # Returns: data frame   Y     I    L
@@ -27,24 +28,24 @@ sample.network <- function(V=1000, S=100) {
   # of Y can be more complicated.
   test.units = V-S
   # sample the incoming links
-  Incoming = rpois(test.units, lambda=0.4)
+  Incoming = rpois(test.units, lambda=lambda.S)
   # Sample the Y
   # determine the parameters of influence
-  b0 = -3.1  # corresponds to 0.04% baseline rate
-  b1 = 0.9
+  # b0 =  # corresponds to 0.04% baseline rate
+  # b1 = 0.9
   L = logistic(b0 + b1 * Incoming)
   Y = rbinom(test.units, size=1, prob=L)
   df = data.frame(Y=Y, I=Incoming, L=L)
   return(df)
 }
 
-agent.decision <- function(true.network, d, theta) {
+agent.decision <- function(outcomes, num.test.units, theta) {
   ## Given some parameters, agents observe a noisy version of the network
   # In this implementation we assume theta=P(edge is right)
   #
   # Args:
   #   true.network = the actual network information (Y, I, L)
-  #   d = max # of test units for the agent to pick
+  #   num.test.units = max # of test units for the agent to pick
   #   theta = parameter of the model of the agent
   # 
   # Returns:
@@ -53,36 +54,36 @@ agent.decision <- function(true.network, d, theta) {
   # TODO(ptoulis): More options are available for the noise model.
   # Also agents might have different models to choose the test set.
   CHECK_INTERVAL(theta, 0, 1)
-  N = nrow(true.network)
-  new.I = rbinom(N, size=true.network$I, prob=theta)
+  N = nrow(outcomes)
+  # Get a noisy estimate of the actual incoming links.
+  new.I = rbinom(N, size=outcomes$I, prob=theta)
   # print(mean((new.I - true.network$I)^2))
-  CHECK_TRUE(d <= length(new.I))
-  units = tail(order(new.I), d)
+  CHECK_TRUE(num.test.units <= length(new.I))
+  units = tail(order(new.I), num.test.units)
+  new.I = tail(sort(new.I), num.test.units)
+  return(data.frame(units=units, I=new.I))
 }
 
-run.Md <- function(network, d, pA, pB) {
+run.Md <- function(outcomes, num.test.units, theta.A, theta.B) {
   # Returns the scores of the agents.
   # print(sprintf("Checking agent A pA=%.3f", pA))
-  units.A = agent.decision(network, d, pA)
+  units.A = agent.decision(outcomes, num.test.units, theta.A)$units
   # print(sprintf("Checking agent B pB=%.3f", pB))
-  units.B = agent.decision(network, d, pB)
+  units.B = agent.decision(outcomes, num.test.units, theta.B)$units
   
-  score.A = sum(network$Y[units.A])
-  score.B = sum(network$Y[units.B])
+  score.A = sum(outcomes$Y[units.A])
+  score.B = sum(outcomes$Y[units.B])
   return(list(score.A=score.A, score.B=score.B))
 }
 
 optimal.Md <- function(V=10^5, S=10^3, nsamples=100) {
+  # C
   pA = 0.25
   pB = 0.2
-  V = 10^5
-  S = 10^3
-  G = sample.network(V, S)
+
+  G = sample.outcomes(V, S)
   
-  d.values = 10^4 * c(0.001, 0.005, 0.01, 0.03, 0.05, 0.08, 
-                      0.1, 0.12, 0.15, 0.18, 0.21, 
-                      0.3, 0.35, 0.4, 0.5, 0.7, 0.9, 1.0,
-                      7, 7.5, 8.1, 8.7, 9, 9.15, 9.2, 9.5, 9.8)
+  d.values = (V-S) * c(0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.9, 0.95)
  
   prob.win.A = c()#rep(NA, length(d.values))
   prob.lose.A = c()#rep(NA, length(d.values))
@@ -100,8 +101,8 @@ optimal.Md <- function(V=10^5, S=10^3, nsamples=100) {
     prob.win.A = c(prob.win.A, mean(A.wins))
     prob.lose.A = c(prob.lose.A, mean(A.loss))
     setTxtProgressBar(pb, value=i/length(d.values))
-    plot(head(d.values/10^4, i), prob.win.A, type="l", col="green", lwd=1.5, ylim=c(0,1))
-    lines(head(d.values/10^4, i), prob.lose.A, col="red", lwd=1.2)
+    plot(head(d.values/(V-S), i), prob.win.A, type="l", col="green", lwd=1.5, ylim=c(0,1))
+    lines(head(d.values/(V-S), i), prob.lose.A, col="red", lwd=1.2)
   }
   
 }
