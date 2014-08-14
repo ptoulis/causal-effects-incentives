@@ -76,12 +76,10 @@ run.Md <- function(outcomes, num.test.units, theta.A, theta.B) {
   return(list(score.A=score.A, score.B=score.B))
 }
 
-optimal.Md <- function(V=10^5, S=10^3, nsamples=100) {
-  # C
-  pA = 0.25
+run.Md.many <- function(V=10^5, S=10^3, nsamples=50) {
+  pA = 0.3
   pB = 0.2
-
-  G = sample.outcomes(V, S)
+  G = sample.outcomes(V, S, lambda.S = 0)
   
   d.values = (V-S) * c(0.005, 0.01, 0.02, 0.03, 0.05, 0.1, 0.2, 0.9, 0.95)
  
